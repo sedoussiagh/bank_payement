@@ -1,0 +1,301 @@
+openapi: 3.1.0
+info:
+  title: Simulation de paiement de factures
+  version: 1.0.0
+  description: Contrat du premier parcours. Le service propriétaire de chaque route est indiqué dans http.md.
+security:
+  - clientBearer: []
+paths:
+  /v1/billers/{billerId}/invoices/{invoiceRef}:
+    parameters:
+      - {name: billerId, in: path, required: true, schema: {type: string}}
+      - {name: invoiceRef, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: getInvoice
+      responses:
+        '200':
+          description: Facture consultée.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - {$ref: '#/components/schemas/InvoiceIntent'}
+                  - type: object
+                    required: [eligible]
+                    properties:
+                      eligible: {type: boolean}
+        '404': {description: INVOICE_NOT_FOUND}
+  /v1/accounts/{accountId}/balance:
+    parameters:
+      - {name: accountId, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: getAccountBalance
+      responses:
+        '200':
+          description: Soldes du compte client.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [bookedBalance, availableBalance]
+                properties:
+                  bookedBalance: {$ref: '#/components/schemas/Money'}
+                  availableBalance: {$ref: '#/components/schemas/Money'}
+        '404': {description: Compte inconnu ou inaccessible.}
+  /v1/payments:
+    post:
+      operationId: confirmPayment
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Clé sensible à la casse, liée au client et à cette opération pendant la durée de vie des données.
+          schema: {type: string, pattern: '^[!-~]{1,128}$'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/InvoiceIntent'}
+                - type: object
+                  required: [accountId]
+                  properties:
+                    accountId: {type: string}
+      responses:
+        '200':
+          description: Rejeu de la même intention. Retourne le même ordre et son statut courant.
+          headers:
+            Location: {$ref: '#/components/headers/PaymentLocation'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PaymentState'}
+        '202':
+          description: Nouvel ordre enregistré durablement.
+          headers:
+            Location: {$ref: '#/components/headers/PaymentLocation'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PaymentState'}
+        '400': {description: Intention ou clé invalide.}
+        '401': {description: Jeton absent ou invalide.}
+        '403': {description: Identité non habilitée.}
+        '409':
+          description: IDEMPOTENCY_CONFLICT
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /v1/payments/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      operationId: getPayment
+      responses:
+        '200':
+          description: État courant, identité de la facture, montant et motif éventuel.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - {$ref: '#/components/schemas/PaymentState'}
+                  - {$ref: '#/components/schemas/InvoiceIntent'}
+                  - type: object
+                    properties:
+                      reasonCode: {type: string}
+        '404': {description: Ordre inconnu ou inaccessible.}
+  /v1/payments/{orderId}/receipt:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      operationId: getReceipt
+      responses:
+        '200':
+          description: Reçu stable après SUCCEEDED.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [receiptId, orderId, billerId, invoiceRef, money, succeededAt]
+                properties:
+                  receiptId: {type: string}
+                  orderId: {type: string}
+                  billerId: {type: string}
+                  invoiceRef: {type: string}
+                  money: {$ref: '#/components/schemas/PaymentMoney'}
+                  succeededAt: {type: string, format: date-time}
+        '404': {description: RECEIPT_NOT_AVAILABLE avant succès. Ordre inconnu ou inaccessible dans les autres cas.}
+  /internal/v1/account-orders/{orderId}/reservation:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      operationId: reserveFunds
+      security:
+        - serviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientId, accountId, money]
+              properties:
+                clientId: {type: string}
+                accountId: {type: string}
+                money: {$ref: '#/components/schemas/PaymentMoney'}
+      responses:
+        '200':
+          description: Réservation ou refus durable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: {enum: [RESERVED, DECLINED]}
+                  reasonCode: {type: string}
+                if:
+                  properties:
+                    status: {const: DECLINED}
+                then:
+                  required: [reasonCode]
+        '409': {description: OPERATION_CONFLICT}
+        '5XX': {$ref: '#/components/responses/UncertainOutcome'}
+  /internal/v1/account-orders/{orderId}/posting:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      operationId: postFunds
+      security:
+        - serviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, money]
+              properties:
+                accountId: {type: string}
+                money: {$ref: '#/components/schemas/PaymentMoney'}
+      responses:
+        '200':
+          description: Effet durable sur la réservation.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, postingId]
+                properties:
+                  status: {const: POSTED}
+                  postingId: {type: string}
+        '409': {description: OPERATION_CONFLICT ou INVALID_RESERVATION_STATE}
+        '5XX': {$ref: '#/components/responses/UncertainOutcome'}
+  /internal/v1/biller-orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      operationId: submitBillerOrder
+      security:
+        - serviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InvoiceIntent'}
+      responses:
+        '200':
+          description: Engagement ou refus définitif enregistré.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FinalBillerDecision'}
+        '202':
+          description: Décision en attente.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PendingBillerDecision'}
+        '409': {description: OPERATION_CONFLICT. Ce conflit ne prouve aucun refus financier.}
+        '5XX': {$ref: '#/components/responses/UncertainOutcome'}
+    get:
+      operationId: getBillerDecision
+      security:
+        - serviceBearer: []
+      responses:
+        '200':
+          description: Décision finale ou en attente.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {$ref: '#/components/schemas/PendingBillerDecision'}
+                  - {$ref: '#/components/schemas/FinalBillerDecision'}
+        '404':
+          description: DECISION_NOT_OBSERVED. L'issue demeure incertaine. Garder la réservation et relire ou rejouer le même ordre.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '5XX': {$ref: '#/components/responses/UncertainOutcome'}
+components:
+  securitySchemes:
+    clientBearer: {type: http, scheme: bearer}
+    serviceBearer: {type: http, scheme: bearer}
+  headers:
+    PaymentLocation:
+      required: true
+      schema: {type: string, format: uri-reference}
+  parameters:
+    OrderId: {name: orderId, in: path, required: true, schema: {type: string}}
+  responses:
+    UncertainOutcome:
+      description: Résultat inconnu. Comme pour un délai réseau, relire ou rejouer avec le même identifiant.
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: {type: string, pattern: '^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$'}
+        currency: {const: MAD}
+    PaymentMoney:
+      allOf:
+        - $ref: '#/components/schemas/Money'
+        - type: object
+          properties:
+            amount:
+              not: {pattern: '^0(\.0{1,2})?$'}
+    InvoiceIntent:
+      type: object
+      required: [billerId, invoiceRef, invoiceVersion, money]
+      properties:
+        billerId: {type: string}
+        invoiceRef: {type: string}
+        invoiceVersion: {type: integer, minimum: 0}
+        money: {$ref: '#/components/schemas/PaymentMoney'}
+    PaymentState:
+      type: object
+      required: [orderId, status]
+      properties:
+        orderId: {type: string}
+        status:
+          enum: [RESERVING, AWAITING_BILLER, RECONCILING, POSTING, RELEASING, SUCCEEDED, FAILED]
+    PendingBillerDecision:
+      type: object
+      required: [status]
+      properties:
+        status: {const: PENDING}
+    FinalBillerDecision:
+      type: object
+      required: [status, decisionRef]
+      properties:
+        status: {enum: [COMMITTED, DECLINED]}
+        decisionRef: {type: string}
+        reasonCode: {type: string}
+      if:
+        properties:
+          status: {const: DECLINED}
+      then:
+        required: [reasonCode]
+    Error:
+      type: object
+      required: [code, correlationId]
+      properties:
+        code: {type: string}
+        correlationId: {type: string}
