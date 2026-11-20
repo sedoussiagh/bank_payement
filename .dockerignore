@@ -1,0 +1,11 @@
+.git
+.idea
+.gradle
+**/.gradle
+.env
+.env.*
+**/build/**
+!services/payment-service/build/libs/payment-service.jar
+!services/account-service/build/libs/account-service.jar
+!services/biller-service/build/quarkus-app/
+!services/biller-service/build/quarkus-app/**

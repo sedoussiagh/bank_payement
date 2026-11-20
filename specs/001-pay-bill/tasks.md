@@ -6,11 +6,11 @@ Les chemins sont relatifs à la racine. Dans les trois services, les frontières
 
 ## Phase 1 — Mise en place
 
-- [ ] T001 Initialiser les sous-projets dans `settings.gradle.kts`, la toolchain Java 27 dans `build.gradle.kts` et le wrapper 9.9.1 avec le SHA-256 officiel de sa distribution dans `gradle/wrapper/gradle-wrapper.properties`. Vérifier aussi le SHA-256 publié de `gradle/wrapper/gradle-wrapper.jar` et l'exécution sous Java 27.
-- [ ] T002 [P] Initialiser les modules Spring Boot 4.2.0 et leurs BOM dans `services/payment-service/build.gradle.kts` et `services/account-service/build.gradle.kts`.
-- [ ] T003 [P] Initialiser le BOM et le plugin Quarkus 3.40.1.2, Quarkus REST et le pilote MongoDB synchrone dans `services/biller-service/build.gradle.kts`.
-- [ ] T004 [P] Définir les trois magasins à accès et volumes séparés dans `compose.yaml`. Initialiser le replica set MongoDB de façon idempotente. Conditionner le démarrage de Biller à la réussite de l'initialisation et à un primaire disponible. Vérifier le démarrage à vide et la persistance au redémarrage avec le volume existant.
-- [ ] T005 Construire et démarrer les modules JVM sous Java 27, avec leurs extensions, et vérifier la connexion PostgreSQL et une transaction MongoDB sur replica set. Après résolution réussie, versionner les `gradle.lockfile` des modules et vérifier leur résolution sans régénération. Consigner les versions et le résultat dans `specs/001-pay-bill/research.md`. Si l'essai échoue, isoler le composant incompatible avant de poursuivre le domaine.
+- [x] T001 Initialiser les sous-projets dans `settings.gradle.kts`, la toolchain Java 27 dans `build.gradle.kts` et le wrapper 9.9.1 avec le SHA-256 officiel de sa distribution dans `gradle/wrapper/gradle-wrapper.properties`. Vérifier aussi le SHA-256 publié de `gradle/wrapper/gradle-wrapper.jar` et l'exécution sous Java 27.
+- [x] T002 [P] Initialiser les modules Spring Boot 4.2.0 et leurs BOM dans `services/payment-service/build.gradle.kts` et `services/account-service/build.gradle.kts`.
+- [x] T003 [P] Initialiser le BOM et le plugin Quarkus 3.40.1.2, Quarkus REST et le pilote MongoDB synchrone dans `services/biller-service/build.gradle.kts`.
+- [x] T004 [P] Définir les trois magasins à accès et volumes séparés dans `compose.yaml`. Initialiser le replica set MongoDB de façon idempotente. Conditionner le démarrage de Biller à la réussite de l'initialisation et à un primaire disponible. Vérifier le démarrage à vide et la persistance au redémarrage avec le volume existant.
+- [x] T005 Construire et démarrer les modules JVM sous Java 27, avec leurs extensions, et vérifier la connexion PostgreSQL et une transaction MongoDB sur replica set. Après résolution réussie, versionner les `gradle.lockfile` des modules et vérifier leur résolution sans régénération. Consigner les versions et le résultat dans `specs/001-pay-bill/research.md`. Si l'essai échoue, isoler le composant incompatible avant de poursuivre le domaine.
 
 ## Phase 2 — Fondations
 

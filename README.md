@@ -29,4 +29,4 @@ Le premier parcours vertical peut utiliser des données préchargées et des int
 | Reçu | Preuve consultable après succès de l'ordre. |
 | BFF | Service d'interface dédié à un espace utilisateur. |
 
-Voir la [première spécification](specs/001-pay-bill/spec.md), la [cible et le backlog](docs/architecture.md) et le [point de reprise](docs/resume.md).
+Voir le [guide de démarrage local](specs/001-pay-bill/quickstart.md), la [première spécification](specs/001-pay-bill/spec.md), la [cible et le backlog](docs/architecture.md) et le [point de reprise](docs/resume.md).

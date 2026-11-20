@@ -27,7 +27,7 @@ Livrer le parcours via trois services et trois bases isolées sous Docker Compos
 | Invariants financiers | Conforme au design. Verrou du compte et écritures équilibrées dans une transaction. Preuves sur PostgreSQL attendues. |
 | Reprise et effets distribués | Conforme au design. État et échéances persistés, effets idempotents par participant. Aucun appel distant dans une transaction locale. Outbox atomique au jalon J4. |
 | Technologies justifiées | Conforme. HTTP bloquant et trois bases couvrent la tranche. Les composants différés restent rattachés au backlog. |
-| Versions et preuves | Support Java 27 documenté par Spring Boot. Compatibilité de la combinaison Quarkus, extensions et pilote sous Java 27 à confirmer par l'essai initial décrit dans les tâches. |
+| Versions et preuves | Support Java 27 documenté par Spring Boot. Compatibilité de la combinaison Quarkus, extensions et pilote sous Java 27 vérifiée au démarrage et par le test de transaction T005. |
 
 ## Structure du projet
 
@@ -69,6 +69,6 @@ Chaque service est un sous-projet Gradle avec son propre `build.gradle.kts`, ses
 | Débit multiple après réponse perdue ou bail expiré | Unicité des effets côté participant et garde sur la version côté Payment. Pannes AC-08 et AC-10. |
 | Engagement concurrent ou ambigu | Transaction MongoDB, concurrence sur le document facture, décision par identifiant d'ordre. Échec de confirmation de commit traité comme résultat indéterminé. Preuve AC-09. |
 | Réservation bloquée | Reprise planifiée, signalement après seuil, consultations par ordre. Aucune libération sur la seule absence de preuve. |
-| Environnement local et dépendances | Valider le JDK, les BOM, l'accès aux images et le replica set avec le premier build et les tests de démarrage. |
+| Environnement local et dépendances | Les versions du JDK, des BOM et des images ainsi que le replica set ont été vérifiés au premier build et au démarrage. |
 
 Aucun écart à la constitution ne requiert de dérogation pour ce design.

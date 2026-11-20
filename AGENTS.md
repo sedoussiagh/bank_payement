@@ -26,4 +26,4 @@ Préserver les fichiers et modifications de l'utilisateur. Rédiger les document
 
 ## Commandes vérifiées
 
-Depuis la racine en PowerShell, `uvx --from 'specify-cli==1.4.0' specify version` et `./.specify/scripts/powershell/resolve-template.ps1 spec-template -Json`. Pour l'environnement, `wsl --list --verbose`, `docker info --format '{{.ServerVersion}}'`, `docker compose version` et `java -version`. Le build cible Java 27 et le Gradle Wrapper défini dans le [plan actif](specs/001-pay-bill/plan.md). Les commandes de build et de test seront vérifiées à la mise en place du wrapper.
+Depuis la racine en PowerShell, `uvx --from 'specify-cli==1.4.0' specify version` et `./.specify/scripts/powershell/resolve-template.ps1 spec-template -Json`. Avec `JAVA_HOME` pointant vers le JDK 27, `.\gradlew.bat --version` et `.\gradlew.bat build` sont vérifiées. Pour les commandes Compose et le test de transaction, voir le [guide local](specs/001-pay-bill/quickstart.md).

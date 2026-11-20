@@ -1,0 +1,136 @@
+name: bank-payement
+
+services:
+  payment-db:
+    image: postgres:18.7@sha256:e754b839f447639b7004895f4d8a4bfcb4e9dbe3a1bc035f27f646562a16fd61
+    environment:
+      POSTGRES_DB: payment
+      POSTGRES_USER: payment
+      POSTGRES_PASSWORD: payment-local
+    volumes:
+      - payment-data:/var/lib/postgresql
+    networks: [payment-data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment -d payment"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  account-db:
+    image: postgres:18.7@sha256:e754b839f447639b7004895f4d8a4bfcb4e9dbe3a1bc035f27f646562a16fd61
+    environment:
+      POSTGRES_DB: account
+      POSTGRES_USER: account
+      POSTGRES_PASSWORD: account-local
+    volumes:
+      - account-data:/var/lib/postgresql
+    networks: [account-data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U account -d account"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mongo:
+    image: mongo:8.0@sha256:bdc216e9d5a6ec2cfdac789b5832fdab64cd32055f59885cae918a92de63c361
+    command: ["mongod", "--replSet", "biller-rs", "--bind_ip_all"]
+    volumes:
+      - biller-data:/data/db
+    networks: [biller-data]
+    ports:
+      - "127.0.0.1:27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mongo-init:
+    image: mongo:8.0@sha256:bdc216e9d5a6ec2cfdac789b5832fdab64cd32055f59885cae918a92de63c361
+    depends_on:
+      mongo:
+        condition: service_started
+    networks: [biller-data]
+    volumes:
+      - ./infra/mongo/init-replica-set.js:/init-replica-set.js:ro
+    entrypoint:
+      - mongosh
+      - mongodb://mongo:27017/admin?directConnection=true&serverSelectionTimeoutMS=30000
+      - --quiet
+      - --file
+      - /init-replica-set.js
+
+  payment-service:
+    build:
+      context: .
+      target: spring-service
+      args:
+        SERVICE: payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment
+      SPRING_DATASOURCE_USERNAME: payment
+      SPRING_DATASOURCE_PASSWORD: payment-local
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    networks: [default, payment-data]
+    ports:
+      - "127.0.0.1:18081:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '^HTTP/1\\.[01] 200 ' <&3"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  account-service:
+    build:
+      context: .
+      target: spring-service
+      args:
+        SERVICE: account-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://account-db:5432/account
+      SPRING_DATASOURCE_USERNAME: account
+      SPRING_DATASOURCE_PASSWORD: account-local
+    depends_on:
+      account-db:
+        condition: service_healthy
+    networks: [default, account-data]
+    ports:
+      - "127.0.0.1:18082:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '^HTTP/1\\.[01] 200 ' <&3"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  biller-service:
+    build:
+      context: .
+      target: biller-service
+    environment:
+      QUARKUS_MONGODB_CONNECTION_STRING: mongodb://mongo:27017/?replicaSet=biller-rs
+      QUARKUS_MONGODB_DATABASE: biller
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+    networks: [default, biller-data]
+    ports:
+      - "127.0.0.1:18083:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /q/health/ready HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '^HTTP/1\\.[01] 200 ' <&3"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  payment-data:
+  account-data:
+  biller-data:
+
+networks:
+  payment-data:
+  account-data:
+  biller-data:
