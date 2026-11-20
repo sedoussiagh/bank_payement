@@ -1,8 +1,8 @@
 # Point de reprise
 
-## État au 2026-11-19
+## État au 2026-11-20
 
-Le dépôt contient le socle Spec Kit, la [spécification clarifiée](../specs/001-pay-bill/spec.md), la [matrice de validation](../specs/001-pay-bill/validation.md), le [plan technique](../specs/001-pay-bill/plan.md) et ses [tâches](../specs/001-pay-bill/tasks.md). Les tâches T001 à T005 sont vérifiées. Les trois services démarrent sous Compose et le test de transaction MongoDB passe. La [constitution](../.specify/memory/constitution.md) reste proposée.
+Le dépôt contient le socle Spec Kit, la [spécification clarifiée](../specs/001-pay-bill/spec.md), la [matrice de validation](../specs/001-pay-bill/validation.md), le [plan technique](../specs/001-pay-bill/plan.md) et ses [tâches](../specs/001-pay-bill/tasks.md). Les trois services démarrent sous Compose. Payment et Account appliquent leurs migrations Flyway, et Biller attend les index MongoDB. Le sous-projet de test fournit des identités signées et utilise une pile Compose isolée. La [constitution](../.specify/memory/constitution.md) reste proposée.
 
 ## Faits vérifiés
 
@@ -17,4 +17,4 @@ Q-01 à Q-03 sont validées et consignées dans les [clarifications](../specs/00
 
 ## Prochaine action
 
-Lire `AGENTS.md` et vérifier le statut Git. Si le pointeur local est absent, sélectionner `specs/001-pay-bill` via `SPECIFY_FEATURE_DIRECTORY` ou recréer `.specify/feature.json` avec `{"feature_directory":"specs/001-pay-bill"}`. La prochaine tranche couvre T006 à T009 pour les migrations, les index et les identités de test. T033 peut démarrer après T005 pour préparer les vérifications sur conteneurs.
+Lire `AGENTS.md` et vérifier le statut Git. Si le pointeur local est absent, sélectionner `specs/001-pay-bill` via `SPECIFY_FEATURE_DIRECTORY` ou recréer `.specify/feature.json` avec `{"feature_directory":"specs/001-pay-bill"}`. Mettre en place Testcontainers (T033), puis les tests de migrations (T034). Les premiers tests des contrats HTTP commencent à T010.

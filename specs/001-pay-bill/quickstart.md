@@ -5,9 +5,10 @@ Le socle T001 à T005 se valide avec Gradle et Docker Compose. Les scénarios m�
 ## Préparer l'environnement
 
 - Sélectionner le JDK 27 comme SDK du projet dans IntelliJ et comme JVM Gradle via `JAVA_HOME`. Le JDK local 27.0.1.1 répond par chemin direct et le PATH observé utilise Java 21. Vérifier `.\gradlew.bat --version`, `docker info` et `docker compose version`.
-- Depuis la racine, exécuter `.\gradlew.bat build` pour produire les trois applications. Vérifier `docker compose config --quiet`, puis lancer `docker compose up --build -d --wait`. Compose monte des volumes séparés et attend le primaire MongoDB avant de lancer Biller.
-- Vérifier les endpoints locaux `http://127.0.0.1:18081/actuator/health`, `http://127.0.0.1:18082/actuator/health` et `http://127.0.0.1:18083/q/health/ready`. Vérifier la transaction réelle avec le test Quarkus ci-dessous. Le test ouvre une collection temporaire et la supprime après vérification.
-- Terminer avec `docker compose down` pour arrêter les services en conservant leurs volumes.
+- Depuis la racine, exécuter `.\gradlew.bat build` pour produire les trois applications. Vérifier `docker compose config --quiet`, puis lancer `docker compose up --build -d --wait`. Compose monte des volumes séparés et attend le primaire et les index MongoDB avant de lancer Biller. Vérifier l'état avec `docker compose ps`. La configuration de base ne publie aucun port hôte.
+- Pour les essais depuis l'hôte, lancer une pile distincte avec `docker compose -p bank-payement-test -f compose.yaml -f compose.test.yaml up --build -d --wait`. Les endpoints locaux sont `http://127.0.0.1:18081/actuator/health`, `http://127.0.0.1:18082/actuator/health` et `http://127.0.0.1:18083/q/health/ready`. Le test de transaction Quarkus ouvre une collection temporaire et la supprime après vérification.
+- Pour charger explicitement les données fictives Biller, exécuter `docker compose -p bank-payement-test -f compose.yaml -f compose.test.yaml --profile demo run --rm --no-deps biller-fixtures` après le démarrage de la pile de test. Les clés des identités de test sont générées en mémoire par la suite Gradle.
+- Terminer avec `docker compose -p bank-payement-test -f compose.yaml -f compose.test.yaml down` pour la pile de test ou `docker compose down` pour la pile de base. Les deux commandes conservent les volumes.
 
 ```powershell
 $env:QUARKUS_MONGODB_CONNECTION_STRING = 'mongodb://127.0.0.1:27018/?replicaSet=biller-rs&directConnection=true'
@@ -24,4 +25,4 @@ $env:QUARKUS_MONGODB_CONNECTION_STRING = 'mongodb://127.0.0.1:27018/?replicaSet=
 | Refus et incertitude, AC-06 et AC-07 | Retarder la décision, avancer l'horloge jusqu'au seuil, vérifier le signalement sans libération, puis injecter un refus final ou une acceptation tardive. Vérifier la libération ou la comptabilisation et le statut final. |
 | Reprise, AC-08 et AC-10 | Interrompre après la mutation d'un participant mais avant la persistance de sa réponse par Payment. Redémarrer et attendre la reprise. Vérifier la cardinalité des engagements, mouvements, libérations et reçus. Tester aussi la panne avant débit après engagement. |
 
-Les appels à émettre et leurs codes figurent dans les [contrats](contracts/http.md). Une fois le sous-projet d'essai livré, lancer `.\gradlew.bat :tests:end-to-end:test` après le démarrage de Compose. La [matrice](validation.md) couvre aussi les preuves d'intégration et le jalon outbox. La suite doit produire des résultats identifiés par critère et des traces corrélées par ordre.
+Les appels à émettre et leurs codes figurent dans les [contrats](contracts/http.md). `.\gradlew.bat :tests:end-to-end:test` vérifie aujourd'hui les identités de démonstration. Les scénarios HTTP seront activés au fur et à mesure de la livraison des endpoints et utiliseront la pile de test Compose. La [matrice](validation.md) couvre aussi les preuves d'intégration et le jalon outbox.

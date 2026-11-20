@@ -37,8 +37,6 @@ services:
     volumes:
       - biller-data:/data/db
     networks: [biller-data]
-    ports:
-      - "127.0.0.1:27018:27017"
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
       interval: 2s
@@ -53,12 +51,18 @@ services:
     networks: [biller-data]
     volumes:
       - ./infra/mongo/init-replica-set.js:/init-replica-set.js:ro
-    entrypoint:
-      - mongosh
-      - mongodb://mongo:27017/admin?directConnection=true&serverSelectionTimeoutMS=30000
-      - --quiet
-      - --file
-      - /init-replica-set.js
+    entrypoint: ["bash", "-ec"]
+    command:
+      - |
+        uri='mongodb://mongo:27017/admin?directConnection=true&serverSelectionTimeoutMS=2000'
+        for attempt in {1..30}; do
+          if mongosh "$$uri" --quiet --eval 'db.adminCommand({ping: 1})' >/dev/null 2>&1; then
+            exec mongosh "$$uri" --quiet --file /init-replica-set.js
+          fi
+          sleep 1
+        done
+        echo 'MongoDB did not become available for replica set initialization' >&2
+        exit 1
 
   mongo-indexes:
     image: mongo:8.0@sha256:bdc216e9d5a6ec2cfdac789b5832fdab64cd32055f59885cae918a92de63c361
@@ -91,8 +95,6 @@ services:
       payment-db:
         condition: service_healthy
     networks: [default, payment-data]
-    ports:
-      - "127.0.0.1:18081:8080"
     healthcheck:
       test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '^HTTP/1\\.[01] 200 ' <&3"]
       interval: 3s
@@ -113,8 +115,6 @@ services:
       account-db:
         condition: service_healthy
     networks: [default, account-data]
-    ports:
-      - "127.0.0.1:18082:8080"
     healthcheck:
       test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '^HTTP/1\\.[01] 200 ' <&3"]
       interval: 3s
@@ -136,8 +136,6 @@ services:
       mongo-indexes:
         condition: service_completed_successfully
     networks: [default, biller-data]
-    ports:
-      - "127.0.0.1:18083:8080"
     healthcheck:
       test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /q/health/ready HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '^HTTP/1\\.[01] 200 ' <&3"]
       interval: 3s

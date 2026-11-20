@@ -1,6 +1,6 @@
 # Validation — Payer une facture
 
-Cette matrice est la référence de couverture. Les critères détaillés figurent dans la [spécification](spec.md). Les tests restent à écrire après la revue et le plan.
+Cette matrice est la référence de couverture. Les critères détaillés figurent dans la [spécification](spec.md). Les tests du parcours métier restent à écrire.
 
 | Règles | Critères | Niveau et preuve attendue |
 | --- | --- | --- |
@@ -17,6 +17,9 @@ Cette matrice est la référence de couverture. Les critères détaillés figure
 Utiliser des données fictives réinitialisables, une horloge contrôlée et des points d'injection déterministes. En fin de tranche, publier les commandes réellement exécutées, les résultats par identifiant de critère et les limites observées. Avant la livraison du MVP, rejouer AC-01, AC-03 et AC-06 à AC-10 de bout en bout et rapprocher les résultats des SC-001 à SC-003. Le plan précisera l'emplacement des suites et les commandes reproductibles.
 
 ## Preuves techniques
+
+- **T006 et T007** — Flyway 12.11.0 a appliqué V1 sur les deux bases PostgreSQL neuves. Les contraintes d'unicité Payment sont présentes. Un essai SQL annulé après vérification a confirmé l'équilibre du journal ainsi que le rejet d'une écriture déséquilibrée et d'une modification de ligne.
+- **T008 et T009** — MongoDB a rejeté une facture dupliquée. Rejouer les index et les fixtures a conservé une seule facture de démonstration dans la pile de test. Le build Gradle a vérifié la signature et la séparation des identités client, opérations et service. Seule la pile de test publie des ports, tous sur l'interface de boucle locale.
 
 - **T033** — Vérifier les intégrations sur PostgreSQL et MongoDB en replica set avec Testcontainers. Exécuter deux fois l'initialisation des index MongoDB et vérifier que les contraintes et les données existantes sont conservées.
 - **T034** — Pour chaque base PostgreSQL, tester l'installation à vide, l'application d'une version suivante sur des données existantes et l'échec de validation après modification d'une migration appliquée. Si seule V1 existe, isoler la version suivante dans les ressources de test.

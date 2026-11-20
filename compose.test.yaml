@@ -1,0 +1,32 @@
+services:
+  payment-service:
+    ports:
+      - "127.0.0.1:18081:8080"
+
+  account-service:
+    ports:
+      - "127.0.0.1:18082:8080"
+
+  biller-service:
+    ports:
+      - "127.0.0.1:18083:8080"
+
+  mongo:
+    ports:
+      - "127.0.0.1:27018:27017"
+
+  biller-fixtures:
+    image: mongo:8.0@sha256:bdc216e9d5a6ec2cfdac789b5832fdab64cd32055f59885cae918a92de63c361
+    profiles: [demo]
+    depends_on:
+      mongo-indexes:
+        condition: service_completed_successfully
+    networks: [biller-data]
+    volumes:
+      - ./services/biller-service/src/test/resources/mongo/demo-fixtures.js:/demo-fixtures.js:ro
+    entrypoint:
+      - mongosh
+      - mongodb://mongo:27017/biller?replicaSet=biller-rs&serverSelectionTimeoutMS=30000
+      - --quiet
+      - --file
+      - /demo-fixtures.js

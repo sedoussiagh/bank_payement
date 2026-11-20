@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "bank-payement"
 include("services:payment-service", "services:account-service", "services:biller-service")
+include("tests:end-to-end")
