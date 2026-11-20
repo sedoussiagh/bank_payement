@@ -26,4 +26,4 @@ Préserver les fichiers et modifications de l'utilisateur. Rédiger les document
 
 ## Commandes vérifiées
 
-Depuis la racine en PowerShell, `uvx --from 'specify-cli==1.4.0' specify version` et `./.specify/scripts/powershell/resolve-template.ps1 spec-template -Json`. Avec `JAVA_HOME` pointant vers le JDK 27, `.\gradlew.bat --version` et `.\gradlew.bat build` sont vérifiées. Pour les commandes Compose et le test de transaction, voir le [guide local](specs/001-pay-bill/quickstart.md).
+Depuis la racine en PowerShell, `uvx --from 'specify-cli==1.4.0' specify version` et `./.specify/scripts/powershell/resolve-template.ps1 spec-template -Json`. Avec `JAVA_HOME` pointant vers le JDK 27, `.\gradlew.bat --version` vérifie la JVM. Utiliser `.\gradlew.bat assemble` pour produire les applications et suivre le [guide local](specs/001-pay-bill/quickstart.md) pour Compose et les tests sur conteneurs.

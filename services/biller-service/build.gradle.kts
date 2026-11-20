@@ -10,6 +10,9 @@ dependencies {
     implementation("io.quarkus:quarkus-mongodb-client")
     implementation("io.quarkus:quarkus-smallrye-health")
     testImplementation("io.quarkus:quarkus-junit")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-mongodb")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -5,7 +5,7 @@ Le socle T001 à T005 se valide avec Gradle et Docker Compose. Les scénarios m�
 ## Préparer l'environnement
 
 - Sélectionner le JDK 27 comme SDK du projet dans IntelliJ et comme JVM Gradle via `JAVA_HOME`. Le JDK local 27.0.1.1 répond par chemin direct et le PATH observé utilise Java 21. Vérifier `.\gradlew.bat --version`, `docker info` et `docker compose version`.
-- Depuis la racine, exécuter `.\gradlew.bat build` pour produire les trois applications. Vérifier `docker compose config --quiet`, puis lancer `docker compose up --build -d --wait`. Compose monte des volumes séparés et attend le primaire et les index MongoDB avant de lancer Biller. Vérifier l'état avec `docker compose ps`. La configuration de base ne publie aucun port hôte.
+- Depuis la racine, exécuter `.\gradlew.bat assemble` pour produire les trois applications. Vérifier `docker compose config --quiet`, puis lancer `docker compose up --build -d --wait`. Compose monte des volumes séparés et attend le primaire et les index MongoDB avant de lancer Biller. Vérifier l'état avec `docker compose ps`. La configuration de base ne publie aucun port hôte.
 - Pour les essais depuis l'hôte, lancer une pile distincte avec `docker compose -p bank-payement-test -f compose.yaml -f compose.test.yaml up --build -d --wait`. Les endpoints locaux sont `http://127.0.0.1:18081/actuator/health`, `http://127.0.0.1:18082/actuator/health` et `http://127.0.0.1:18083/q/health/ready`. Le test de transaction Quarkus ouvre une collection temporaire et la supprime après vérification.
 - Pour charger explicitement les données fictives Biller, exécuter `docker compose -p bank-payement-test -f compose.yaml -f compose.test.yaml --profile demo run --rm --no-deps biller-fixtures` après le démarrage de la pile de test. Les clés des identités de test sont générées en mémoire par la suite Gradle.
 - Terminer avec `docker compose -p bank-payement-test -f compose.yaml -f compose.test.yaml down` pour la pile de test ou `docker compose down` pour la pile de base. Les deux commandes conservent les volumes.
@@ -13,6 +13,21 @@ Le socle T001 à T005 se valide avec Gradle et Docker Compose. Les scénarios m�
 ```powershell
 $env:QUARKUS_MONGODB_CONNECTION_STRING = 'mongodb://127.0.0.1:27018/?replicaSet=biller-rs&directConnection=true'
 .\gradlew.bat :services:biller-service:mongoTransactionTest
+```
+
+## Intégrations Testcontainers
+
+Les tâches Gradle `test` et `build` des services nécessitent un moteur Docker accessible depuis Java. Sous Linux avec le JDK 27, `./gradlew test` exécute les tests et crée ses propres conteneurs éphémères. La pile Compose n'est pas nécessaire.
+
+Si le canal nommé Windows de Rancher Desktop échoue, exécuter Gradle dans un conteneur Java 27 relié au socket Linux du même moteur. Depuis PowerShell à la racine du dépôt :
+
+```powershell
+docker run --rm --network host --env TESTCONTAINERS_HOST_OVERRIDE=127.0.0.1 `
+  --mount 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock' `
+  --mount "type=bind,source=$($PWD.Path),target=/workspace" `
+  --mount 'type=volume,source=bank-payement-gradle27-cache,target=/root/.gradle' `
+  --workdir /workspace eclipse-temurin:27-jdk@sha256:5e6d9093c7a8e95adfaa8828253c58f2c6820116d07a062440a778358807578a `
+  bash ./gradlew --no-daemon test
 ```
 
 ## Scénarios à livrer
