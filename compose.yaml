@@ -60,6 +60,23 @@ services:
       - --file
       - /init-replica-set.js
 
+  mongo-indexes:
+    image: mongo:8.0@sha256:bdc216e9d5a6ec2cfdac789b5832fdab64cd32055f59885cae918a92de63c361
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+    networks: [biller-data]
+    volumes:
+      - ./services/biller-service/src/main/resources/mongo/V1__biller_indexes.js:/init-indexes.js:ro
+    entrypoint:
+      - mongosh
+      - mongodb://mongo:27017/biller?replicaSet=biller-rs&serverSelectionTimeoutMS=30000
+      - --quiet
+      - --file
+      - /init-indexes.js
+
   payment-service:
     build:
       context: .
@@ -115,6 +132,8 @@ services:
       mongo:
         condition: service_healthy
       mongo-init:
+        condition: service_completed_successfully
+      mongo-indexes:
         condition: service_completed_successfully
     networks: [default, biller-data]
     ports:
