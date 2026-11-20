@@ -14,7 +14,7 @@ Les chemins sont relatifs à la racine. Dans les trois services, les frontières
 
 ## Phase 2 — Fondations
 
-- [ ] T006 [P] Configurer Flyway et son module PostgreSQL pour Payment dans `services/payment-service/build.gradle.kts` et préparer `services/payment-service/src/main/resources/db/migration/V1__payment.sql`. Créer l'ordre, la saga et le reçu avec unicité de l'ordre du reçu et de `(client_id, idempotency_key)`, ainsi que les échéances, la version et les baux.
+- [x] T006 [P] Configurer Flyway et son module PostgreSQL pour Payment dans `services/payment-service/build.gradle.kts` et préparer `services/payment-service/src/main/resources/db/migration/V1__payment.sql`. Créer l'ordre, la saga et le reçu avec unicité de l'ordre du reçu et de `(client_id, idempotency_key)`, ainsi que les échéances, la version et les baux.
 - [ ] T007 [P] Configurer Flyway et son module PostgreSQL pour Account dans `services/account-service/build.gradle.kts` et préparer `services/account-service/src/main/resources/db/migration/V1__account.sql`. Créer compte, réservation unique par ordre, action unique par ordre et action, journal immuable et mouvement de paiement unique par ordre.
 - [ ] T008 [P] Créer des scripts d'index versionnés et rejouables dans `services/biller-service/src/main/resources/mongo/`. Séparer les fixtures fictives. Vérifier l'identité unique `(billerId, invoiceRef)`, la décision par `_id = orderId` et l'index des décisions en attente.
 - [ ] T009 Mettre en place les identités de démo et les frontières de test dans `compose.yaml` et `tests/end-to-end/build.gradle.kts`. Isoler les routes internes, fournir des identités de service et des jetons clients/opérations distincts, isoler les fixtures et activer JUnit Platform pour `:tests:end-to-end:test`.
